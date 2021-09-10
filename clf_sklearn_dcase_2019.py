@@ -19,6 +19,9 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 from sklearn.metrics import classification_report
 from sklearn.metrics import accuracy_score
+from sklearn.metrics import balanced_accuracy_score
+from sklearn.metrics import f1_score
+
 train  = np.load('//nas/shared/workspace/i21_skshirsagar/foa_mel_norm_nmf/fold12_nmf.npy')
 val = np.load('//nas/shared/workspace/i21_skshirsagar/foa_mel_norm_nmf/fold3_nmf.npy')
 test = np.load('//nas/shared/workspace/i21_skshirsagar/foa_mel_norm_nmf/fold4_nmf.npy')
@@ -43,14 +46,12 @@ y_train1 = np.argmax(y_train, axis=1)
 y_valid1 = np.argmax(y_valid, axis=1)
 y_test1 = np.argmax(y_test, axis=1)
 
-names = ["Nearest Neighbors", "Linear SVM", "RBF SVM", "Gaussian Process",
+names = ["Nearest Neighbors",  "Gaussian Process",
          "Decision Tree", "Random Forest", "Neural Net", "AdaBoost",
          "Naive Bayes", "QDA"]
 
 classifiers = [
-    KNeighborsClassifier(3),
-    SVC(kernel="linear", C=0.025),
-    SVC(gamma=2, C=1),
+    KNeighborsClassifier(11),
     GaussianProcessClassifier(1.0 * RBF(1.0)),
     DecisionTreeClassifier(max_depth=5),
     RandomForestClassifier(max_depth=5, n_estimators=10, max_features=1),
@@ -59,12 +60,13 @@ classifiers = [
     GaussianNB(),
     QuadraticDiscriminantAnalysis()]
 
-
+final_results = np.empty((0, 5))
+output_cols = ['name', 'F1_weighted', 'F1_micro', 'F1_macro',  'bal_error_rate']
 for name, clf in zip(names, classifiers):
     print(name, clf)
-    clf.fit(X_train, y_train)
-    score = clf.score(x_test1, y_test1)
-    print(score)
+#     clf.fit(X_train, y_train)
+#     score = clf.score(x_test1, y_test1)
+#     print(score)
     print(X_train1.shape)
     clf.fit(X_train1, y_train1)
     print(y_train1.shape)
@@ -73,7 +75,7 @@ for name, clf in zip(names, classifiers):
     y_pred = (y_pred > 0.5)
     acc = balanced_accuracy_score(y_test1, y_pred)
     print(acc*100)
-
+    bal_error_rate = 1- acc
     class_names = ['alarm', 'baby', 'crash', 'dog',  'female_speech', 'footsteps', 'knock', 'male_scream', 'male_speech', 'phone', 'piano']
 
 
@@ -82,3 +84,14 @@ for name, clf in zip(names, classifiers):
     y_pred = (y_pred > 0.5)
     accuracy_score(y_test1, y_pred, normalize=False)
     print(classification_report(y_test1, y_pred, target_names=class_names, digits=4))
+    F1_weighted = f1_score(y_test1, y_pred, average='weighted')
+    F1_macro =  f1_score(y_test1, y_pred, average='macro')
+    F1_micro = f1_score(y_test1, y_pred, average='micro')
+    
+#     accuracy = zero_one_score(y_test1, y_pred)
+#     error_rate = 1 - accuracy
+    print(F1_weighted, F1_micro, F1_macro, bal_error_rate)
+    out_vec = np.hstack((name, F1_weighted, F1_micro, F1_macro, bal_error_rate))
+    final_results = np.vstack((final_results,out_vec))
+df=pd.DataFrame(final_results,columns=output_cols)
+df.to_csv('output_df1.csv',index=None)

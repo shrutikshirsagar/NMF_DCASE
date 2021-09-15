@@ -3,6 +3,9 @@ import os
 import pandas as pd
 
 audio_path = "/media/amrgaballah/Seagate Backup Plus Drive/Bosch/DCASE2017/audio/"
+out_path = '/home/amrgaballah/Desktop/'
+if not os.path.exists(out_path):
+    os.makedir(out_path)
 final_vec = np.empty((0,431))
 for filename in os.listdir(audio_path):
     f = os.path.join(audio_path, filename)
